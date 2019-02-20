@@ -573,5 +573,8 @@
     },
     "bugs": {
         "url": "https://github.com/totvs/advpl-vscode/issues"
+    },
+    "bin": {
+        "advplcli": "./src/cli/advplcli.js"
     }
 }
