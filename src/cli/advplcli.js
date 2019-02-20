@@ -131,7 +131,7 @@ function Compiler(configure) {
             let child = child_process.spawn(self.filepath, parameters);
 
             child.stdout.on("data", (data) => {
-                output += data;
+                stdout += data;
             });
 
             child.on("exit", (returnCode) => {
@@ -144,7 +144,7 @@ function Compiler(configure) {
     self.compileDirectory = function(directory) {
         return new Promise((resolve, reject) => {
             let parameters = [];
-            let output = "";
+            let stdout = "";
 
             parameters.push("--compileType=1");
             parameters.push("--compileInfo=" + JSON.stringify(self.configure));
@@ -153,12 +153,12 @@ function Compiler(configure) {
             let child = child_process.spawn(self.filepath, parameters);
 
             child.stdout.on("data", (data) => {
-                output += data;
+                stdout += data;
             });
 
             child.on("exit", (returnCode) => {
                 if (returnCode) reject(data);
-                resolve(output);
+                resolve(stdout);
             });
         });
     };
@@ -166,7 +166,7 @@ function Compiler(configure) {
     self.patch = function(patchFile) {
         return new Promise((resolve, reject) => {
             let parameters = [];
-            let output = "";
+            let stdout = "";
 
             parameters.push("--compileInfo=" + JSON.stringify(self.configure));
             parameters.push("--patchBuild=" + patchFile);
@@ -174,12 +174,12 @@ function Compiler(configure) {
             let child = child_process.spawn(self.filepath, parameters);
 
             child.stdout.on("data", (data) => {
-                output += data;
+                stdout += data;
             });
 
             child.on("exit", (returnCode) => {
                 if (returnCode) reject(data);
-                resolve(output);
+                resolve(stdout);
             });
         });
     }
@@ -187,7 +187,7 @@ function Compiler(configure) {
     self.apply = function(patchFile) {
         return new Promise((resolve, reject) => {
             let parameters = [];
-            let output = "";
+            let stdout = "";
 
             parameters.push("--compileInfo=" + JSON.stringify(self.configure));
             parameters.push("--patchApply=" + patchFile);
@@ -195,12 +195,12 @@ function Compiler(configure) {
             let child = child_process.spawn(self.filepath, parameters);
 
             child.stdout.on("data", (data) => {
-                output += data;
+                stdout += data;
             });
 
             child.on("exit", (returnCode) => {
                 if (returnCode) reject(data);
-                resolve(output);
+                resolve(stdout);
             });
         });
     }
@@ -379,7 +379,11 @@ function parseParameters() {
             case /-debug$/.test(current):
                 rootConfigure['debug'] = true;
                 break;
-            case /--env\.name$/.test(current):
+            case /-password$/.test(current):
+                rootConfigure['password'] = process.argv[i+1];
+                i += 1;
+                break;
+            case /--env\.environment$/.test(current):
                 rootConfigure['selectedEnvironment'] = process.argv[i+1];
                 environmentConfigure['environment'] = process.argv[i+1];
                 i += 1;
@@ -388,10 +392,6 @@ function parseParameters() {
                 rootConfigure['selectedEnvironment'] = process.argv[i+1];
                 environmentConfigure['environment'] = process.argv[i+1];
                 i += 1
-                break;
-            case /--password$/.test(current):
-                rootConfigure['password'] = process.argv[i+1];
-                i += 1;
                 break;
             case /--env\./.test(current):
                 param = current.slice(6);
