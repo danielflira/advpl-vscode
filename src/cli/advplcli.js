@@ -416,12 +416,81 @@ function parseParameters() {
     return defaultConfigure;
 }
 
+function createDirIfNotExists(dirName) {
+    return new Promise((resolve, reject) => {
+        fs.stat(dirName, (error, stat) => {
+            if (error) {
+                if (error.code == 'ENOENT') {
+                    fs.mkdir(dirName, (error) => {
+                        if (error) reject(error);
+                        resolve();
+                    });
+                } else {
+                    reject(error);
+                }
+            } else {
+                resolve();
+            }
+        });
+    });
+}
+
+function createFileIfNotExists(fileName) {
+    return new Promise((resolve, reject) => {
+        fs.stat(fileName, (error, stat) => {
+            if (error) {
+                if (error.code == 'ENOENT') {
+                    fs.open(fileName, 'a', (error, fd) => {
+                        if (error) reject(error);
+                        fs.close(fd, (error) => {
+                            if (error) reject(error);
+                            resolve();
+                        });
+                    });
+                } else {
+                    reject(error);
+                }
+            } else {
+                resolve();
+            }
+        });
+    });
+}
+
+// o bridge reclama se não exista o smartClientPath e o includeList
+// além do include prtopdef.ch, então cria caso não existam, assim evita
+// mensagens de erro
+function environmentSetup(configure) {
+    let smartclientPath = configure['environments'][0]['smartClientPath'];
+    let includePath = configure['environments'][0]['includeList']
+    return new Promise((resolve,reject) => {
+        let smartclientPromise = createDirIfNotExists(smartclientPath);
+        let includePromise = createDirIfNotExists(includePath);
+        
+        Promise.all([smartclientPromise, includePromise]).then((results) => {
+            createFileIfNotExists(path.join(includePath, 'prtopdef.ch')).then((result) => {
+                resolve();
+            }).catch((error) => {
+                reject(error);
+            })
+        }).catch((errors) => {
+            if (errors) {
+                reject(errors);
+            }
+        });
+    });
+}
+
 var packagePath = path.join(path.dirname(process.mainModule.filename), '..', '..');
 detectAndExtractCompiler(packagePath).then(() => {
     let configure = parseParameters();
     let compiler = new Compiler(configure);
 
-    compiler.cipher(configure['password']).then((output) => {
+    Promise.all([
+        environmentSetup(configure),
+        compiler.cipher(configure['password'])
+    ]).then((outputs) => {
+        let output = outputs[1];
         let sources = configure['sources'];
         let action = configure['action'];
         let debug = configure['debug'];
@@ -463,6 +532,8 @@ detectAndExtractCompiler(packagePath).then(() => {
                 console.log(error);
             });
         }
+    }).catch((errors) => {
+        console.log(errors);
     });
 }).catch((error) => {
     console.log(error);
